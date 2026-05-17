@@ -1,0 +1,9 @@
+﻿<Application x:Class="WpfAzureConfig.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:WpfAzureConfig">
+    <!-- StartupUri removed - window creation handled by Host in App.xaml.cs -->
+    <Application.Resources>
+         
+    </Application.Resources>
+</Application>
