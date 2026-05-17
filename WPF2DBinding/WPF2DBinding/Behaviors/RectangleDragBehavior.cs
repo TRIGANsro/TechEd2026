@@ -1,7 +1,7 @@
 using Microsoft.Xaml.Behaviors;
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -9,25 +9,15 @@ using WPF2DBinding.Models;
 
 namespace WPF2DBinding.Behaviors;
 
+/// <summary>
+/// Behavior pro kreslení nového obdélníku drag & drop operací.
+/// Pouze zachytává myš a aktualizuje Oblast vybrané Zajímavost.
+/// </summary>
 public class RectangleDragBehavior : Behavior<Canvas>
 {
-    public static readonly DependencyProperty ZajimavostiProperty =
-        DependencyProperty.Register(nameof(Zajimavosti), typeof(System.Collections.ObjectModel.ObservableCollection<Zajimavost>),
-            typeof(RectangleDragBehavior), new PropertyMetadata(null, OnZajimavostiChanged));
-
     public static readonly DependencyProperty SelectedZajimavostProperty =
         DependencyProperty.Register(nameof(SelectedZajimavost), typeof(Zajimavost),
-            typeof(RectangleDragBehavior), new PropertyMetadata(null, OnSelectedZajimavostChanged));
-
-    public static readonly DependencyProperty ZoomLevelProperty =
-        DependencyProperty.Register(nameof(ZoomLevel), typeof(double),
-            typeof(RectangleDragBehavior), new PropertyMetadata(1.0, OnZoomLevelChanged));
-
-    public System.Collections.ObjectModel.ObservableCollection<Zajimavost>? Zajimavosti
-    {
-        get => (System.Collections.ObjectModel.ObservableCollection<Zajimavost>)GetValue(ZajimavostiProperty);
-        set => SetValue(ZajimavostiProperty, value);
-    }
+            typeof(RectangleDragBehavior), new PropertyMetadata(null));
 
     public Zajimavost? SelectedZajimavost
     {
@@ -35,15 +25,9 @@ public class RectangleDragBehavior : Behavior<Canvas>
         set => SetValue(SelectedZajimavostProperty, value);
     }
 
-    public double ZoomLevel
-    {
-        get => (double)GetValue(ZoomLevelProperty);
-        set => SetValue(ZoomLevelProperty, value);
-    }
-
     private Point? _dragStartPoint;
-    private Rectangle? _currentRectangle;
-    private Point _rectangleStartPoint;
+    private DragRectangleAdorner? _adorner;
+    private AdornerLayer? _adornerLayer;
 
     protected override void OnAttached()
     {
@@ -51,6 +35,7 @@ public class RectangleDragBehavior : Behavior<Canvas>
         AssociatedObject.MouseLeftButtonDown += OnMouseLeftButtonDown;
         AssociatedObject.MouseMove += OnMouseMove;
         AssociatedObject.MouseLeftButtonUp += OnMouseLeftButtonUp;
+        AssociatedObject.Loaded += OnLoaded;
     }
 
     protected override void OnDetaching()
@@ -58,210 +43,113 @@ public class RectangleDragBehavior : Behavior<Canvas>
         AssociatedObject.MouseLeftButtonDown -= OnMouseLeftButtonDown;
         AssociatedObject.MouseMove -= OnMouseMove;
         AssociatedObject.MouseLeftButtonUp -= OnMouseLeftButtonUp;
+        AssociatedObject.Loaded -= OnLoaded;
         
-        if (Zajimavosti != null)
-        {
-            Zajimavosti.CollectionChanged -= OnZajimavostiCollectionChanged;
-        }
-        
+        RemoveAdorner();
         base.OnDetaching();
     }
 
-    private static void OnZajimavostiChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (d is RectangleDragBehavior behavior)
-        {
-            if (e.OldValue is System.Collections.ObjectModel.ObservableCollection<Zajimavost> oldCollection)
-            {
-                oldCollection.CollectionChanged -= behavior.OnZajimavostiCollectionChanged;
-            }
-            
-            if (e.NewValue is System.Collections.ObjectModel.ObservableCollection<Zajimavost> newCollection)
-            {
-                newCollection.CollectionChanged += behavior.OnZajimavostiCollectionChanged;
-            }
-            
-            behavior.RedrawRectangles();
-        }
-    }
-
-    private static void OnSelectedZajimavostChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        if (d is RectangleDragBehavior behavior)
-        {
-            behavior.UpdateAllRectangleColors();
-        }
-    }
-
-    private void OnZajimavostiCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        RedrawRectangles();
-    }
-
-    private static void OnZoomLevelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        if (d is RectangleDragBehavior behavior)
-        {
-            behavior.UpdateStrokeThickness();
-        }
+        _adornerLayer = AdornerLayer.GetAdornerLayer(AssociatedObject);
     }
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         // Kreslení pouze pokud je nìco vybráno
-        if (SelectedZajimavost == null)
+        if (SelectedZajimavost == null || _adornerLayer == null)
             return;
 
         if (AssociatedObject.IsMouseDirectlyOver)
         {
             _dragStartPoint = e.GetPosition(AssociatedObject);
-            _rectangleStartPoint = _dragStartPoint.Value;
 
-            _currentRectangle = new Rectangle
-            {
-                Stroke = Brushes.Blue,
-                StrokeThickness = GetAdjustedStrokeThickness(),
-                Fill = new SolidColorBrush(Color.FromArgb(30, 0, 0, 255))
-            };
-
-            AssociatedObject.Children.Add(_currentRectangle);
+            // Vytvoøit adorner pro preview obdélník
+            _adorner = new DragRectangleAdorner(AssociatedObject, _dragStartPoint.Value);
+            _adornerLayer.Add(_adorner);
+            
             AssociatedObject.CaptureMouse();
         }
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (_dragStartPoint.HasValue && _currentRectangle != null)
+        if (_dragStartPoint.HasValue && _adorner != null)
         {
             var currentPoint = e.GetPosition(AssociatedObject);
-
-            var x = Math.Min(_rectangleStartPoint.X, currentPoint.X);
-            var y = Math.Min(_rectangleStartPoint.Y, currentPoint.Y);
-            var width = Math.Abs(currentPoint.X - _rectangleStartPoint.X);
-            var height = Math.Abs(currentPoint.Y - _rectangleStartPoint.Y);
-
-            Canvas.SetLeft(_currentRectangle, x);
-            Canvas.SetTop(_currentRectangle, y);
-            _currentRectangle.Width = width;
-            _currentRectangle.Height = height;
+            _adorner.UpdateRectangle(_dragStartPoint.Value, currentPoint);
         }
     }
 
     private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (_dragStartPoint.HasValue && _currentRectangle != null)
+        if (_dragStartPoint.HasValue && _adorner != null)
         {
-            var x = Canvas.GetLeft(_currentRectangle);
-            var y = Canvas.GetTop(_currentRectangle);
-            var width = _currentRectangle.Width;
-            var height = _currentRectangle.Height;
+            var rect = _adorner.GetRectangle();
+            
+            RemoveAdorner();
 
-            AssociatedObject.Children.Remove(_currentRectangle);
-
-            // Aktualizace vybraného obdélníku
-            if (width > 5 && height > 5 && SelectedZajimavost != null)
+            // Aktualizace vybrané zajímavosti - WPF binding se postará o zbytek
+            if (rect.Width > 5 && rect.Height > 5 && SelectedZajimavost != null)
             {
-                SelectedZajimavost.Oblast = new Rect(x, y, width, height);
-                RedrawRectangles();
+                SelectedZajimavost.Oblast = rect;
             }
 
             _dragStartPoint = null;
-            _currentRectangle = null;
             AssociatedObject.ReleaseMouseCapture();
         }
     }
 
-    private void RedrawRectangles()
+    private void RemoveAdorner()
     {
-        AssociatedObject.Children.Clear();
-
-        if (Zajimavosti == null) return;
-
-        foreach (var zajimavost in Zajimavosti)
+        if (_adorner != null && _adornerLayer != null)
         {
-            // Pøeskoèit obdélníky s nulovou nebo velmi malou plochou
-            if (zajimavost.Oblast.Width < 1 || zajimavost.Oblast.Height < 1)
-                continue;
-
-            var rect = new Rectangle
-            {
-                Width = zajimavost.Oblast.Width,
-                Height = zajimavost.Oblast.Height,
-                StrokeThickness = GetAdjustedStrokeThickness(),
-                Tag = zajimavost
-            };
-
-            UpdateRectangleAppearance(rect, zajimavost);
-
-            Canvas.SetLeft(rect, zajimavost.Oblast.X);
-            Canvas.SetTop(rect, zajimavost.Oblast.Y);
-
-            rect.MouseLeftButtonDown += (s, e) =>
-            {
-                SelectedZajimavost = zajimavost;
-                e.Handled = true;
-            };
-
-            zajimavost.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(Zajimavost.Oblast))
-                {
-                    RedrawRectangles();
-                }
-                else if (e.PropertyName == nameof(Zajimavost.IsSelected))
-                {
-                    UpdateRectangleAppearance(rect, zajimavost);
-                }
-            };
-
-            AssociatedObject.Children.Add(rect);
+            _adornerLayer.Remove(_adorner);
+            _adorner = null;
         }
     }
+}
 
-    private void UpdateAllRectangleColors()
+/// <summary>
+/// Adorner pro zobrazení preview obdélníku bìhem drag operace.
+/// </summary>
+internal class DragRectangleAdorner : Adorner
+{
+    private Rect _rectangle;
+    private readonly Pen _pen;
+    private readonly Brush _fill;
+
+    public DragRectangleAdorner(UIElement adornedElement, Point startPoint) : base(adornedElement)
     {
-        if (Zajimavosti == null) return;
-
-        foreach (var child in AssociatedObject.Children)
-        {
-            if (child is Rectangle rect && rect.Tag is Zajimavost zajimavost)
-            {
-                UpdateRectangleAppearance(rect, zajimavost);
-            }
-        }
-    }
-
-    private void UpdateRectangleAppearance(Rectangle rect, Zajimavost zajimavost)
-    {
-        var isSelected = zajimavost == SelectedZajimavost;
+        _rectangle = new Rect(startPoint, startPoint);
         
-        if (isSelected)
+        _pen = new Pen(Brushes.Blue, 2)
         {
-            rect.Stroke = Brushes.Blue;
-            rect.Fill = new SolidColorBrush(Color.FromArgb(30, 0, 0, 255));
-        }
-        else
-        {
-            rect.Stroke = Brushes.Red;
-            rect.Fill = new SolidColorBrush(Color.FromArgb(30, 255, 0, 0));
-        }
-    }
-
-    private void UpdateStrokeThickness()
-    {
-        var thickness = GetAdjustedStrokeThickness();
+            DashStyle = new DashStyle(new double[] { 4.0, 2.0 }, 0)
+        };
+        _pen.Freeze();
         
-        foreach (var child in AssociatedObject.Children)
-        {
-            if (child is Rectangle rect)
-            {
-                rect.StrokeThickness = thickness;
-            }
-        }
+        _fill = Brushes.Transparent;
+        
+        IsHitTestVisible = false; // Adorner nepøekáží mouse eventùm
     }
 
-    private double GetAdjustedStrokeThickness()
+    public void UpdateRectangle(Point startPoint, Point currentPoint)
     {
-        return Math.Clamp(2.0 / ZoomLevel, 0.5, 5.0);
+        var x = Math.Min(startPoint.X, currentPoint.X);
+        var y = Math.Min(startPoint.Y, currentPoint.Y);
+        var width = Math.Abs(currentPoint.X - startPoint.X);
+        var height = Math.Abs(currentPoint.Y - startPoint.Y);
+
+        _rectangle = new Rect(x, y, width, height);
+        InvalidateVisual(); // Pøekreslit adorner
+    }
+
+    public Rect GetRectangle() => _rectangle;
+
+    protected override void OnRender(DrawingContext drawingContext)
+    {
+        base.OnRender(drawingContext);
+        drawingContext.DrawRectangle(_fill, _pen, _rectangle);
     }
 }

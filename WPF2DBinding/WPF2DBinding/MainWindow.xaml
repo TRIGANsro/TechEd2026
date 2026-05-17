@@ -14,6 +14,7 @@
     
     <Window.Resources>
         <converters:RectToCroppedImageConverter x:Key="RectToCroppedImageConverter"/>
+        <converters:ZoomToStrokeThicknessConverter x:Key="ZoomToStrokeThicknessConverter"/>
         
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#007ACC"/>
@@ -156,17 +157,67 @@
                                Stretch="None"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                        <Canvas x:Name="OverlayCanvas"
-                                Width="{Binding ElementName=MainImage, Path=ActualWidth}"
-                                Height="{Binding ElementName=MainImage, Path=ActualHeight}"
-                                Background="Transparent">
-                            <i:Interaction.Behaviors>
-                                <behaviors:RectangleDragBehavior 
-                                    Zajimavosti="{Binding Zajimavosti}"
-                                    SelectedZajimavost="{Binding SelectedZajimavost, Mode=TwoWay}"
-                                    ZoomLevel="{Binding ZoomLevel}"/>
-                            </i:Interaction.Behaviors>
-                        </Canvas>
+                        <!-- ItemsControl s Canvas panelem pro zobrazení obdélníků -->
+                        <ItemsControl ItemsSource="{Binding Zajimavosti}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas Width="{Binding ElementName=MainImage, Path=ActualWidth}"
+                                            Height="{Binding ElementName=MainImage, Path=ActualHeight}"
+                                            Background="Transparent">
+                                        <i:Interaction.Behaviors>
+                                            <behaviors:RectangleDragBehavior 
+                                                SelectedZajimavost="{Binding SelectedZajimavost, Mode=TwoWay}"/>
+                                        </i:Interaction.Behaviors>
+                                    </Canvas>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            
+                            <!-- ItemContainerStyle pro nastavení Canvas.Left a Canvas.Top -->
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Canvas.Left" Value="{Binding Oblast.X}"/>
+                                    <Setter Property="Canvas.Top" Value="{Binding Oblast.Y}"/>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            
+                            <!-- ItemTemplate definuje Rectangle s bindingy -->
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Rectangle Width="{Binding Oblast.Width}"
+                                               Height="{Binding Oblast.Height}"
+                                               Cursor="Hand">
+                                        <Rectangle.StrokeThickness>
+                                            <Binding Path="DataContext.ZoomLevel" 
+                                                     RelativeSource="{RelativeSource AncestorType=Window}"
+                                                     Converter="{StaticResource ZoomToStrokeThicknessConverter}"/>
+                                        </Rectangle.StrokeThickness>
+                                        
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="MouseLeftButtonDown">
+                                                <i:InvokeCommandAction 
+                                                    Command="{Binding DataContext.SelectZajimavostCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                        
+                                        <!-- Defaultní styl (nevybraný) -->
+                                        <Rectangle.Style>
+                                            <Style TargetType="Rectangle">
+                                                <Setter Property="Stroke" Value="Red"/>
+                                                <Setter Property="Fill" Value="#1EFF0000"/>
+                                                <Style.Triggers>
+                                                    <!-- Trigger pro vybraný stav -->
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Stroke" Value="Blue"/>
+                                                        <Setter Property="Fill" Value="#1E0000FF"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Rectangle.Style>
+                                    </Rectangle>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </Grid>
                 </ScrollViewer>
             </Border>

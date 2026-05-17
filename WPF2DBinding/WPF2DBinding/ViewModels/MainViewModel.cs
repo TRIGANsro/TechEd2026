@@ -154,4 +154,13 @@ public partial class MainViewModel : ObservableObject
         zajimavost.Oblast = newOblast;
         _logger.LogDebug("Updated oblast for {Id}: {Oblast}", zajimavost.Id, newOblast);
     }
+
+    [RelayCommand]
+    private void SelectZajimavost(Zajimavost? item)
+    {
+        if (item != null)
+        {
+            SelectedZajimavost = item;
+        }
+    }
 }
