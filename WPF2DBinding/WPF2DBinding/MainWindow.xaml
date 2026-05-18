@@ -43,6 +43,10 @@
                     <Setter Property="Background" Value="#CCCCCC"/>
                     <Setter Property="Foreground" Value="#666666"/>
                 </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#00705A"/>
+                </Trigger>
+
             </Style.Triggers>
         </Style>
 
@@ -55,6 +59,15 @@
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="RowHeight" Value="35"/>
         </Style>
+        
+        <!-- Pen pro drag & drop preview -->
+        <Pen x:Key="DragSelectionPen" 
+             Brush="Blue" 
+             Thickness="2">
+            <Pen.DashStyle>
+                <DashStyle Dashes="4 2"/>
+            </Pen.DashStyle>
+        </Pen>
     </Window.Resources>
     
     <Grid>
@@ -166,7 +179,8 @@
                                             Background="Transparent">
                                         <i:Interaction.Behaviors>
                                             <behaviors:RectangleDragBehavior 
-                                                SelectedZajimavost="{Binding SelectedZajimavost, Mode=TwoWay}"/>
+                                                SelectedZajimavost="{Binding SelectedZajimavost, Mode=TwoWay}"
+                                                SelectionPen="{StaticResource DragSelectionPen}"/>
                                         </i:Interaction.Behaviors>
                                     </Canvas>
                                 </ItemsPanelTemplate>

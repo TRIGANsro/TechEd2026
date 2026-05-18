@@ -19,15 +19,35 @@ public class RectangleDragBehavior : Behavior<Canvas>
         DependencyProperty.Register(nameof(SelectedZajimavost), typeof(Zajimavost),
             typeof(RectangleDragBehavior), new PropertyMetadata(null));
 
+    public static readonly DependencyProperty SelectionPenProperty =
+        DependencyProperty.Register(nameof(SelectionPen), typeof(Pen),
+            typeof(RectangleDragBehavior), new PropertyMetadata(CreateDefaultPen()));
+
     public Zajimavost? SelectedZajimavost
     {
         get => (Zajimavost)GetValue(SelectedZajimavostProperty);
         set => SetValue(SelectedZajimavostProperty, value);
     }
 
+    public Pen SelectionPen
+    {
+        get => (Pen)GetValue(SelectionPenProperty);
+        set => SetValue(SelectionPenProperty, value);
+    }
+
     private Point? _dragStartPoint;
     private DragRectangleAdorner? _adorner;
     private AdornerLayer? _adornerLayer;
+
+    private static Pen CreateDefaultPen()
+    {
+        var pen = new Pen(Brushes.Blue, 2)
+        {
+            DashStyle = new DashStyle(new double[] { 4.0, 2.0 }, 0)
+        };
+        pen.Freeze();
+        return pen;
+    }
 
     protected override void OnAttached()
     {
@@ -64,8 +84,8 @@ public class RectangleDragBehavior : Behavior<Canvas>
         {
             _dragStartPoint = e.GetPosition(AssociatedObject);
 
-            // Vytvoøit adorner pro preview obdélník
-            _adorner = new DragRectangleAdorner(AssociatedObject, _dragStartPoint.Value);
+            // Vytvoøit adorner pro preview obdélník s Pen z XAML
+            _adorner = new DragRectangleAdorner(AssociatedObject, _dragStartPoint.Value, SelectionPen);
             _adornerLayer.Add(_adorner);
             
             AssociatedObject.CaptureMouse();
@@ -117,19 +137,11 @@ internal class DragRectangleAdorner : Adorner
 {
     private Rect _rectangle;
     private readonly Pen _pen;
-    private readonly Brush _fill;
 
-    public DragRectangleAdorner(UIElement adornedElement, Point startPoint) : base(adornedElement)
+    public DragRectangleAdorner(UIElement adornedElement, Point startPoint, Pen pen) : base(adornedElement)
     {
         _rectangle = new Rect(startPoint, startPoint);
-        
-        _pen = new Pen(Brushes.Blue, 2)
-        {
-            DashStyle = new DashStyle(new double[] { 4.0, 2.0 }, 0)
-        };
-        _pen.Freeze();
-        
-        _fill = Brushes.Transparent;
+        _pen = pen;
         
         IsHitTestVisible = false; // Adorner nepøekáží mouse eventùm
     }
@@ -150,6 +162,6 @@ internal class DragRectangleAdorner : Adorner
     protected override void OnRender(DrawingContext drawingContext)
     {
         base.OnRender(drawingContext);
-        drawingContext.DrawRectangle(_fill, _pen, _rectangle);
+        drawingContext.DrawRectangle(null, _pen, _rectangle); // null fill = pouze outline
     }
 }
