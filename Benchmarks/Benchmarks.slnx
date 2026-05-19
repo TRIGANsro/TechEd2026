@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Benchmark1/Benchmark1.csproj" />
+  <Project Path="StopwatchDemo/StopwatchDemo.csproj" />
+</Solution>
