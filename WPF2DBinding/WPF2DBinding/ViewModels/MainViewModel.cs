@@ -158,9 +158,10 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SelectZajimavost(Zajimavost? item)
     {
-        if (item != null)
+        if (item != null && Zajimavosti.Contains(item))
         {
             SelectedZajimavost = item;
+            _logger.LogInformation("Selected zajimavost {Id} via rectangle click", item.Id);
         }
     }
 }
