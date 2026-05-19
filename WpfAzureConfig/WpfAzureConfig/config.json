@@ -9,7 +9,7 @@
     }
   },
   "AzureAppConfiguration": {
-    "ConnectionString": "Endpoint=https://appconfig2026.azconfig.io;Id=fsWl;Secret=DEMO",
+    "ConnectionString": "",
     "KeyVaultEndpoint": "",
     "Label": ""
   },
@@ -18,7 +18,7 @@
       "SuperApp": {
         "Name": "Gopas TechEd 2026 SuperApp",
         "Environment": "Production",
-        "EnableFeature": "true",
+        "EnableFeatures": true,
         "ApiEndpoint": "https://api.gopas.cz/teched26/superapp",
         "DBpass": "SuperSecretPassword"
       }

@@ -75,9 +75,9 @@ public class ConfigurationService : IConfigurationService
         
         // Add application settings
         var settings = await GetCurrentSettingsAsync();
-        items.Add(new ConfigurationItem("ApplicationName", settings.Name, "Config"));
-        items.Add(new ConfigurationItem("Environment", settings.Environment, "Config"));
-        items.Add(new ConfigurationItem("EnableAdvancedFeatures", settings.EnableFeatures.ToString(), "Azure/Config"));
+        items.Add(new ConfigurationItem("ApplicationName", settings.Name, "Azure/Config"));
+        items.Add(new ConfigurationItem("Environment", settings.Environment, "Azure/Config"));
+        items.Add(new ConfigurationItem("EnableFeatures", settings.EnableFeatures.ToString(), "Azure/Config"));
         items.Add(new ConfigurationItem("ApiEndpoint", settings.ApiEndpoint ?? "Not Set", "Azure/Config"));
         items.Add(new ConfigurationItem("DBpass", settings.DBpass , "Key Vault/Config"));
         
