@@ -1,15 +1,12 @@
 ﻿using BenchmarkDotNet.Running;
 
-
-namespace Benchmark1
+namespace SumBenchmark
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            //BenchmarkRunner.Run<Testovac>();
-            BenchmarkRunner.Run<Testovac2>();
-
+            BenchmarkRunner.Run<Sumovac>();
         }
     }
 }
