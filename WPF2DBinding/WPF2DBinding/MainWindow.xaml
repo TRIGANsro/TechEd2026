@@ -57,6 +57,49 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="DataGridCellStyle" TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Blue"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="Yellow"/>
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="Orange"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Blue"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True"/>
+                        <Condition Property="IsFocused" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="Blue"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </MultiTrigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5F3FF"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True"/>
+                        <Condition Property="IsMouseOver" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="#005A9E"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="DataGridStyle" TargetType="DataGrid">
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="CanUserAddRows" Value="False"/>
@@ -65,8 +108,10 @@
             <Setter Property="GridLinesVisibility" Value="None"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="RowHeight" Value="35"/>
+            <Setter Property="RowStyle" Value="{StaticResource DataGridRowStyle}"/>
+            <Setter Property="CellStyle" Value="{StaticResource DataGridCellStyle}"/>
         </Style>
-        
+
         <!-- Pen pro drag & drop preview -->
         <Pen x:Key="DragSelectionPen" 
              Brush="Blue" 
@@ -135,7 +180,7 @@
 
                     <DataGrid Grid.Row="1" 
                               ItemsSource="{Binding Zajimavosti}"
-                              SelectedItem="{Binding SelectedZajimavost}"
+                              SelectedItem="{Binding SelectedZajimavost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               Style="{StaticResource DataGridStyle}"
                               Margin="10">
                         <DataGrid.Columns>
